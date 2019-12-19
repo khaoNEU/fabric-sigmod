@@ -20,10 +20,12 @@ func init() {
 	logger = flogging.MustGetLogger(pkgLogID)
 }
 
+//resolver接口，包括了Getschedule()方法
 type Resolver interface {
 	GetSchedule() ([]int32, []bool)
 }
 
+//resolver包含了两个graph，使用邻接表进行存储
 type resolver struct {
 	graph    *[][]int32 // original graph represented as adjacency list
 	invgraph *[][]int32 // inverted graph represented as adjacency list
@@ -36,6 +38,7 @@ func NewResolver(graph *[][]int32, invgraph *[][]int32) Resolver {
 	}
 }
 
+//该方法可以理解为主方法，通过调用这个方法获得最终的串行调度
 func (res *resolver) GetSchedule() ([]int32, []bool) {
 	// get an instance of dependency resolver
 	dagGenerator := jce.NewJohnsonCE(res.graph)
