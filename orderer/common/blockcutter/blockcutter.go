@@ -58,9 +58,9 @@ type receiver struct {
 	maxMessageCount uint32
 	maxUniqueKeys   uint32
 
-	invalid []bool
+	invalid       []bool
 	keyVersionMap map[uint32]*kvrwset.Version
-	keyTxMap map[uint32][]int32
+	keyTxMap      map[uint32][]int32
 
 	txReadSet  [][]uint64
 	txWriteSet [][]uint64
@@ -93,9 +93,9 @@ func NewReceiverImpl(sharedConfigFetcher OrdererConfigFetcher) Receiver {
 		txReadSet:  make([][]uint64, batchSize.MaxMessageCount),
 		txWriteSet: make([][]uint64, batchSize.MaxMessageCount),
 
-		invalid: make([]bool, batchSize.MaxMessageCount),
+		invalid:       make([]bool, batchSize.MaxMessageCount),
 		keyVersionMap: make(map[uint32]*kvrwset.Version),
-		keyTxMap : make(map[uint32][]int32),
+		keyTxMap:      make(map[uint32][]int32),
 
 		uniqueKeyCounter: 0,
 		uniqueKeyMap:     make(map[string]uint32),
@@ -193,7 +193,7 @@ func (r *receiver) ProcessTransaction(msg *cb.Envelope) bool {
 
 						ver, ok := r.keyVersionMap[key]
 						if ok {
-							if ver.BlockNum == readVer.BlockNum && ver.TxNum == readVer.TxNum{
+							if ver.BlockNum == readVer.BlockNum && ver.TxNum == readVer.TxNum {
 								r.keyTxMap[key] = append(r.keyTxMap[key], tid)
 							} else {
 								for _, tx := range r.keyTxMap[key] {
@@ -345,19 +345,23 @@ func (r *receiver) ProcessBlock() ([]*cb.Envelope, []*cb.Envelope) {
 	if len(r.pendingBatch) > 1 {
 		graph := make([][]int32, r.txCounter)
 		invgraph := make([][]int32, r.txCounter)
+		//有txCounter个事务，就对应了2*txCounter个graph
 		for i := int32(0); i < r.txCounter; i++ {
 			graph[i] = make([]int32, 0, r.txCounter)
 			invgraph[i] = make([]int32, 0, r.txCounter)
 		}
 
 		// for every transactions, find the intersection between the readSet and the writeSet
+		//对于每个事务，计算读写集之间的交集
 		for i := int32(0); i < r.txCounter; i++ {
 			for j := int32(0); j < r.txCounter; j++ {
+				//相同事务，或者事务不合法时，继续
 				if i == j || r.invalid[i] || r.invalid[j] {
 					continue
 				} else {
 					for k := uint32(0); k < (r.maxUniqueKeys / 64); k++ {
 						if (r.txWriteSet[i][k] & r.txReadSet[j][k]) != 0 {
+							//更新图
 							graph[i] = append(graph[i], j)
 							invgraph[j] = append(invgraph[j], i)
 							break
@@ -370,8 +374,10 @@ func (r *receiver) ProcessBlock() ([]*cb.Envelope, []*cb.Envelope) {
 		r.txWriteSet = nil
 		r.txReadSet = nil
 
+		//调用resolver中的方法，把上面创建好的图作为参数传递
 		resGen := resolver.NewResolver(&graph, &invgraph)
 
+		//调用GetSchedule()方法获得串行序列
 		res, _ := resGen.GetSchedule()
 		lenres := len(res)
 
@@ -386,6 +392,7 @@ func (r *receiver) ProcessBlock() ([]*cb.Envelope, []*cb.Envelope) {
 		}
 
 		// log some information
+		//日志中记录序列信息
 		logger.Debugf("schedule-> %v", res)
 		logger.Infof("oldBlockSize:%d, newBlockSize:%d", len(r.pendingBatch), len(validBatch))
 
