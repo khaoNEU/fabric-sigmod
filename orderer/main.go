@@ -9,8 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 // function should be included in this package.
 package main
 
-import "github.com/hyperledger/fabric/orderer/common/server"
+import (
+	"fmt"
+	"github.com/hyperledger/fabric/orderer/common/server"
+)
 
 func main() {
 	server.Main()
+	fmt.Println("This is cross-chain concurrency control fabric based on sigmod 2019")
 }
