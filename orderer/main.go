@@ -15,7 +15,6 @@ import (
 )
 
 func main() {
-	fmt.Println("---------------------Begin My Fabric-------------------------------")
+	fmt.Println("---------------------Begin My Fabric Orderer-------------------------------")
 	server.Main()
-	fmt.Println("This is cross-chain concurrency control fabric based on sigmod 2019")
 }
