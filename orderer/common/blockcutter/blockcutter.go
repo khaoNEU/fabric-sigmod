@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package blockcutter
 
 import (
+	"fmt"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	cb "github.com/hyperledger/fabric/protos/common"
 
@@ -88,7 +89,7 @@ func NewReceiverImpl(sharedConfigFetcher OrdererConfigFetcher) Receiver {
 	return &receiver{
 		txCounter:       0,
 		maxMessageCount: batchSize.MaxMessageCount,
-		maxUniqueKeys:   batchSize.MaxUniqueKeys,
+		maxUniqueKeys:   batchSize.MaxUniqueKeys, //MaxUniqueKeys值是configtx.yaml文件中配置的，定义了可以访问的key最大数
 
 		txReadSet:  make([][]uint64, batchSize.MaxMessageCount),
 		txWriteSet: make([][]uint64, batchSize.MaxMessageCount),
@@ -130,8 +131,18 @@ W is stored in column major form
 // if a transaction contains more keys than MaxUniqueKeyCount, the batch is
 // cut and this transaction is processed in a single transaction block. No
 // serializability check is necessary for this transaction.
+// ----------------------------------------------------------------------
+// type Envelope struct {
+//	// A marshaled Payload
+//	Payload []byte `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`
+//	// A signature by the creator specified in the Payload header
+//	Signature []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
+// }
+// ---------------------------------------------------------------------
+//通过解析读写集来处理事务, Envelope中保存了数据和签名
+//这个方法将每个事务tx拆分成对应的读写集
 func (r *receiver) ProcessTransaction(msg *cb.Envelope) bool {
-
+	r.PrintInfo()
 	// get current transaction id
 	tid := r.txCounter
 
@@ -140,10 +151,12 @@ func (r *receiver) ProcessTransaction(msg *cb.Envelope) bool {
 	var err error
 	data, err = proto.Marshal(msg)
 
+	//创建读写集，通过一维数组进行存储
 	readSet := make([]uint64, r.maxUniqueKeys/64)
 	writeSet := make([]uint64, r.maxUniqueKeys/64)
 
 	if err == nil {
+		//获取chaincode的action
 		resppayload, err := utils.GetActionFromEnvelope(data)
 
 		if err == nil {
@@ -154,10 +167,12 @@ func (r *receiver) ProcessTransaction(msg *cb.Envelope) bool {
 				for _, ns := range txRWSet.NsRwSets[1:] {
 
 					// generate key for each key in the read and write set and use it to insert the read/write key into RW matrices
+					// 分析写集，解析出对哪些key进行了写操作
 					for _, write := range ns.KvRwSet.Writes {
 						writeKey := write.GetKey()
 
 						// check if the key exists
+						// 这里检查解析到的key是否已经存在，如果不存在则加入到uniqueKeyMap中
 						key, ok := r.uniqueKeyMap[writeKey]
 
 						if ok == false {
@@ -179,9 +194,10 @@ func (r *receiver) ProcessTransaction(msg *cb.Envelope) bool {
 						writeSet[index] |= (uint64(1) << (key % 64))
 					}
 
+					//分析读集，解析出对哪些key进行读操作
 					for _, read := range ns.KvRwSet.Reads {
 						readKey := read.GetKey()
-						readVer := read.GetVersion()
+						readVer := read.GetVersion() //获得该读操作对应的版本号version
 						key, ok := r.uniqueKeyMap[readKey]
 						if ok == false {
 							// if the key is not found, it is inserted. So increment
@@ -227,11 +243,16 @@ func (r *receiver) ProcessTransaction(msg *cb.Envelope) bool {
 		}
 	}
 
+	//将上面解析的读写操作的key集合，放到对应事务的读写集合中
 	r.txReadSet[tid] = readSet
 	r.txWriteSet[tid] = writeSet
 	r.txCounter += 1
 
 	return false
+}
+
+func (r *receiver) PrintInfo() {
+	fmt.Println(r)
 }
 
 // Ordered should be invoked sequentially as messages are ordered
@@ -341,6 +362,7 @@ func (r *receiver) Cut() []*cb.Envelope {
 
 // Process the block and partition it into two blocks
 // containing serialized transactions, and invalid transactions.
+//处理区块
 func (r *receiver) ProcessBlock() ([]*cb.Envelope, []*cb.Envelope) {
 	if len(r.pendingBatch) > 1 {
 		graph := make([][]int32, r.txCounter)
