@@ -60,6 +60,7 @@ var (
 
 // Main is the entry point of orderer process
 func Main() {
+	//得到所有命令行参数
 	fullCmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	// "version" command
@@ -82,8 +83,12 @@ func Main() {
 
 // Start provides a layer of abstraction for benchmark test
 func Start(cmd string, conf *localconfig.TopLevel) {
+	//获取到签名
 	signer := localmsp.NewSigner()
+	//初始化服务器配置config
 	serverConfig := initializeServerConfig(conf)
+	fmt.Println(serverConfig)
+	//使用配置文件来初始化grpcserver
 	grpcServer := initializeGrpcServer(conf, serverConfig)
 	caSupport := &comm.CASupport{
 		AppRootCAsByChain:     make(map[string][][]byte),
@@ -100,6 +105,7 @@ func Start(cmd string, conf *localconfig.TopLevel) {
 
 	manager := initializeMultichannelRegistrar(conf, signer, tlsCallback)
 	mutualTLS := serverConfig.SecOpts.UseTLS && serverConfig.SecOpts.RequireClientCert
+	//初始化一个orderer server
 	server := NewServer(manager, signer, &conf.Debug, conf.General.Authentication.TimeWindow, mutualTLS)
 
 	switch cmd {
@@ -205,6 +211,7 @@ func initializeBootstrapChannel(conf *localconfig.TopLevel, lf blockledger.Facto
 		logger.Panic("Unknown genesis method:", conf.General.GenesisMethod)
 	}
 
+	//从创世区块中获得chainID
 	chainID, err := utils.GetChainIDFromBlock(genesisBlock)
 	if err != nil {
 		logger.Fatal("Failed to parse chain ID from genesis block:", err)

@@ -18,7 +18,8 @@ import (
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
 	"github.com/hyperledger/fabric/protos/utils"
 
-	"github.com/hyperledger/fabric/orderer/common/resolver"
+	//"github.com/hyperledger/fabric/orderer/common/resolver"
+	"github.com/khaoNEU/fabric-sigmod/orderer/common/resolver"
 
 	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
 )
@@ -176,6 +177,11 @@ func (r *receiver) ProcessTransaction(msg *cb.Envelope) bool {
 						key, ok := r.uniqueKeyMap[writeKey]
 
 						if ok == false {
+
+							//获取该写操作的from和to属性，表示从哪个channel写到哪个channel
+							from := write.GetFrom()
+							to := write.GetTo()
+
 							// if the key is not found, insert and increment
 							// the key counter
 							r.uniqueKeyMap[writeKey] = r.uniqueKeyCounter
