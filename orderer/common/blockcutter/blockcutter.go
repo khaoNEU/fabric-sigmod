@@ -18,8 +18,7 @@ import (
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
 	"github.com/hyperledger/fabric/protos/utils"
 
-	//"github.com/hyperledger/fabric/orderer/common/resolver"
-	"github.com/khaoNEU/fabric-sigmod/orderer/common/resolver"
+	"github.com/hyperledger/fabric/orderer/common/resolver"
 
 	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
 )
