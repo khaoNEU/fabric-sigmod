@@ -227,6 +227,7 @@ func initializeBootstrapChannel(conf *localconfig.TopLevel, lf blockledger.Facto
 	}
 }
 
+//初始化grpcserver
 func initializeGrpcServer(conf *localconfig.TopLevel, serverConfig comm.ServerConfig) *comm.GRPCServer {
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", conf.General.ListenAddress, conf.General.ListenPort))
 	if err != nil {
@@ -242,6 +243,7 @@ func initializeGrpcServer(conf *localconfig.TopLevel, serverConfig comm.ServerCo
 	return grpcServer
 }
 
+//初始化本地MSP
 func initializeLocalMsp(conf *localconfig.TopLevel) {
 	// Load local MSP
 	err := mspmgmt.LoadLocalMsp(conf.General.LocalMSPDir, conf.General.BCCSP, conf.General.LocalMSPID)
