@@ -178,8 +178,10 @@ func (r *receiver) ProcessTransaction(msg *cb.Envelope) bool {
 						if ok == false {
 
 							//获取该写操作的from和to属性，表示从哪个channel写到哪个channel
-							from := write.GetFrom()
-							to := write.GetTo()
+							// from := write.GetFrom()
+							fmt.Println("here we cal the GetFrom() function to get the transaction from filed")
+							//to := write.GetTo()
+							fmt.Println("here we cal the GetTo() function to get the transaction to filed")
 
 							// if the key is not found, insert and increment
 							// the key counter
