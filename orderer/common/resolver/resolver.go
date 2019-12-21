@@ -8,7 +8,8 @@ package resolver
 
 import (
 	"github.com/hyperledger/fabric/common/flogging"
-	jce "github.com/hyperledger/fabric/orderer/common/johnsonce"
+	//jce "github.com/hyperledger/fabric/orderer/common/johnsonce"
+	jce "github.com/khaoNEU/fabric-sigmod/orderer/common/johnsonce"
 	"github.com/op/go-logging"
 )
 

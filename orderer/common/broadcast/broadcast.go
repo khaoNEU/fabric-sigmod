@@ -47,6 +47,7 @@ type ChannelSupport interface {
 }
 
 // Consenter provides methods to send messages through consensus
+// 定义共识方法
 type Consenter interface {
 	// Order accepts a message or returns an error indicating the cause of failure
 	// It ultimately passes through to the consensus.Chain interface

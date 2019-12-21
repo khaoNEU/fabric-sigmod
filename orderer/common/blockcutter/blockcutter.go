@@ -18,7 +18,8 @@ import (
 	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
 	"github.com/hyperledger/fabric/protos/utils"
 
-	"github.com/hyperledger/fabric/orderer/common/resolver"
+	//"github.com/hyperledger/fabric/orderer/common/resolver"
+	"github.com/khaoNEU/fabric-sigmod/orderer/common/resolver"
 
 	"github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
 )
@@ -36,6 +37,7 @@ type OrdererConfigFetcher interface {
 }
 
 // Receiver defines a sink for the ordered broadcast messages
+// Receiver借口中定义了4个函数
 type Receiver interface {
 	// Ordered should be invoked sequentially as messages are ordered
 	// Each batch in `messageBatches` will be wrapped into a block.
@@ -44,11 +46,17 @@ type Receiver interface {
 	Ordered(msg *cb.Envelope) (messageBatches [][]*cb.Envelope, pending bool)
 
 	// Cut returns the current batch and starts a new one
+	// Cut() 方法的功能主要是将超过给定最大字节数，就进行切割
 	Cut() []*cb.Envelope
 
 	// Process the transaction and record the read/write set into a bitset.
 	// Used to resolve transactional dependencies within the batch.
 	ProcessTransaction(msg *cb.Envelope) bool
+
+	//Process the cross chain transaction (CCT) and record the read/write of the CCT int to a bitset
+	//Used to resolve transactional CCT dependencies within the bath
+	//自己定义的处理跨链事务的方法
+	ProcessCrossChainTransaction(msg *cb.Envelope) bool
 
 	// Process the current block and return (valid, invalid) two blocks.
 	ProcessBlock() ([]*cb.Envelope, []*cb.Envelope)
@@ -139,10 +147,10 @@ W is stored in column major form
 //	Signature []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
 // }
 // ---------------------------------------------------------------------
-//通过解析读写集来处理事务, Envelope中保存了数据和签名
+// 为receiver绑定ProcessTransaction方法
+// 通过解析读写集来处理事务, Envelope中保存了数据和签名
 //这个方法将每个事务tx拆分成对应的读写集
 func (r *receiver) ProcessTransaction(msg *cb.Envelope) bool {
-	r.PrintInfo()
 	// get current transaction id
 	tid := r.txCounter
 
@@ -156,7 +164,7 @@ func (r *receiver) ProcessTransaction(msg *cb.Envelope) bool {
 	writeSet := make([]uint64, r.maxUniqueKeys/64)
 
 	if err == nil {
-		//获取chaincode的action
+		//获取chaincode的action用来提取读写集
 		resppayload, err := utils.GetActionFromEnvelope(data)
 
 		if err == nil {
@@ -258,8 +266,14 @@ func (r *receiver) ProcessTransaction(msg *cb.Envelope) bool {
 	return false
 }
 
-func (r *receiver) PrintInfo() {
-	fmt.Println(r)
+//处理跨链事务CCT
+func (r *receiver) ProcessCrossChainTransaction(msg *cb.Envelope) bool {
+	fmt.Println("this is the ProcessCrossChainTransaction() function")
+	//获取到事务的id
+	txid := r.txCounter
+
+	data := make([]byte, messageSizeBytes(msg))
+	return false
 }
 
 // Ordered should be invoked sequentially as messages are ordered

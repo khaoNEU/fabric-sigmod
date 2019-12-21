@@ -8,7 +8,8 @@ package johnsonce
 
 import (
 	"github.com/hyperledger/fabric/common/flogging"
-	tscc "github.com/hyperledger/fabric/orderer/common/tarjanscc"
+	tscc "github.com/khaoNEU/fabric-sigmod/orderer/common/tarjanscc"
+	//tscc "github.com/hyperledger/fabric/orderer/common/tarjanscc"
 	"github.com/op/go-logging"
 )
 
